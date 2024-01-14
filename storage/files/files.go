@@ -27,6 +27,11 @@ func (s Storage) Save(page *storage.Page) (err error) {
 
 	fPath := filepath.Join(s.basePath, page.UserName)
 
+	if err := folderIsExists(fPath); err != nil {
+		msg := fmt.Sprintf("can't check if folder %s exists", fPath)
+		return e.Wrap(msg, err)
+	}
+
 	if err := os.Mkdir(fPath, defaultPerm); err != nil {
 		return err
 	}
@@ -52,7 +57,7 @@ func (s Storage) Save(page *storage.Page) (err error) {
 func (s Storage) PickRandom(userName string) (page *storage.Page, err error) {
 	defer func() { err = e.WrapIfErr("can't save", err) }()
 
-	path := filepath.Join(s.basePath, page.UserName)
+	path := filepath.Join(s.basePath, userName)
 
 	files, err := os.ReadDir(path)
 	if err != nil {
@@ -104,7 +109,6 @@ func (s Storage) IsExists(p *storage.Page) (bool, error) {
 	case err != nil:
 		msg := fmt.Sprintf("can't check if file %s exists", path)
 		return false, e.Wrap(msg, err)
-
 	}
 
 	return true, nil
@@ -130,4 +134,17 @@ func (s Storage) decodePath(filepath string) (*storage.Page, error) {
 }
 func fileName(p *storage.Page) (string, error) {
 	return p.Hash()
+}
+
+func folderIsExists(fPath string) error {
+
+	switch _, err := os.Stat(fPath); {
+	case errors.Is(err, os.ErrNotExist):
+		return nil
+	case err != nil:
+		msg := fmt.Sprintf("can't check if folder %s exists", fPath)
+		return e.Wrap(msg, err)
+	}
+
+	return nil
 }
