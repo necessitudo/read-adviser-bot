@@ -27,13 +27,16 @@ func (s Storage) Save(page *storage.Page) (err error) {
 
 	fPath := filepath.Join(s.basePath, page.UserName)
 
-	if err := folderIsExists(fPath); err != nil {
+	createFolder, err := folderIsNotExists(fPath)
+	if err != nil {
 		msg := fmt.Sprintf("can't check if folder %s exists", fPath)
 		return e.Wrap(msg, err)
 	}
 
-	if err := os.Mkdir(fPath, defaultPerm); err != nil {
-		return err
+	if createFolder == true {
+		if err := os.Mkdir(fPath, defaultPerm); err != nil {
+			return err
+		}
 	}
 
 	fName, err := fileName(page)
@@ -136,15 +139,15 @@ func fileName(p *storage.Page) (string, error) {
 	return p.Hash()
 }
 
-func folderIsExists(fPath string) error {
+func folderIsNotExists(fPath string) (bool, error) {
 
 	switch _, err := os.Stat(fPath); {
 	case errors.Is(err, os.ErrNotExist):
-		return nil
+		return true, nil
 	case err != nil:
 		msg := fmt.Sprintf("can't check if folder %s exists", fPath)
-		return e.Wrap(msg, err)
+		return false, e.Wrap(msg, err)
 	}
 
-	return nil
+	return false, nil
 }
